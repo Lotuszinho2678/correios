@@ -1,109 +1,143 @@
 import React, { useState, useEffect } from 'react';
-import { FlatList, View, Text, Image, StyleSheet, ActivityIndicator, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Pressable } from 'react-native';
 import axios from 'axios';
 
-const ProductsScreen = () => {
+const ProductsScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get('http://localhost/api/Controller/produto.php/json/');
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar os produtos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await axios.get(`https://fakestoreapi.com/products`);
-        setProducts(response.data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, []);
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" style={styles.loading} />;
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Carregando produtos...</Text>
+      </View>
+    );
   }
 
-  if (error) {
-    return <Text style={styles.error}>{error}</Text>;
-  }
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{item.nome}</Text>
+      <Text><Text style={styles.label}>Descrição:</Text> {item.descricao}</Text>
+      <Text><Text style={styles.label}>Quantidade:</Text> {item.qtd}</Text>
+      <Text><Text style={styles.label}>Marca:</Text> {item.marca}</Text>
+      <Text><Text style={styles.label}>Preço:</Text> R${item.preco}</Text>
+      <Text><Text style={styles.label}>Validade:</Text> {item.validade}</Text>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <Text style={styles.title}>Lista de Produtos</Text>
+      
+      {/* Botões usando Pressable */}
+      <Pressable
+        style={styles.button}
+        onPress={() => navigation.navigate('AddProductScreen')}
+        role="button" 
+      >
+        <Text style={styles.buttonText}>Adicionar Produto</Text>
+      </Pressable>
+      <Pressable
+        style={styles.button}
+        onPress={() => navigation.navigate('produtoPut')}
+        role="button" 
+      >
+        <Text style={styles.buttonText}>Atualizar um Produto</Text>
+      </Pressable>
+      <Pressable
+        style={styles.button}
+        onPress={() => navigation.navigate('produtoPatch')}
+        role="button" 
+      >
+        <Text style={styles.buttonText}>Atualizar um Produto parcialmente</Text>
+      </Pressable>
+      <Pressable
+        style={styles.button}
+        onPress={() => navigation.navigate('produtoDelete')}
+        role="button"
+      >
+        <Text style={styles.buttonText}>Deletar um Produto</Text>
+      </Pressable>
+
       <FlatList
         data={products}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Image
-              source={{ uri: item.image }}
-              style={styles.image}
-              resizeMode="cover"
-            />
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.price}>${item.price}</Text>
-            <Text style={styles.description}>{item.description}</Text>
-          </View>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>No products available</Text>}
+        renderItem={renderItem}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={styles.cardContainer}
+        numColumns={2} 
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f4f4',
-    padding: 10,  
-  },
-  card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  image: {
-    width: 120,  
-    height: 120,  
-    borderRadius: 8,
-    marginBottom: 10,
+    paddingHorizontal: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginVertical: 20,
+    color: '#333',
+    textAlign: 'center',
+  },
+  cardContainer: {
+    paddingBottom: 20,
+    paddingHorizontal: 10,
+    // Remova justifyContent e use apenas padding, o FlatList gerencia isso
+  },
+  card: {
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    elevation: 3,
+    width: '48%', // Para garantir que caibam duas colunas
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#007BFF',
+  },
+  label: {
     fontWeight: 'bold',
   },
-  price: {
-    fontSize: 14,
-    color: '#888',
-  },
-  description: {
-    fontSize: 12,
-    color: '#555',
-  },
-  empty: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#888',
-  },
-  loading: {
+  loader: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  error: {
+  button: {
+    backgroundColor: '#007BFF',
+    padding: 12,
+    borderRadius: 6,
+    marginVertical: 8,
+  },
+  buttonText: {
+    color: '#fff',
     textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: 'red',
+    fontWeight: 'bold',
   },
 });
+
 
 export default ProductsScreen;
